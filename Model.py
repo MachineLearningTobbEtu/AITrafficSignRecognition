@@ -6,16 +6,16 @@ import os
 import cv2
 import warnings
 
-warnings.filterwarnings('ignore') 
+warnings.filterwarnings('ignore')
 
-
+"""
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Conv2D,Dense,Flatten,Input,MaxPooling2D,Dropout,BatchNormalization,Reshape
 from tensorflow.keras.preprocessing.image import load_img,img_to_array
 from sklearn.metrics import confusion_matrix,classification_report
 from keras.utils import to_categorical
-
+"""
 
 img_path='archive/'
 
