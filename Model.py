@@ -115,9 +115,22 @@ datagen = ImageDataGenerator(
     fill_mode='nearest'       # Boş pikselleri doldurmak için en yakın değer
 )
 
+augmented_images = datagen.flow(normalized_images, batch_size=1)
+
+for i in range(5):  # Örneğin 5 tane augment edilmiş görüntü gösterelim
+    batch = next(augmented_images)  # Bir sonraki batch'i al
+    
+    # Batch'ten görüntüyü al ve ilk boyutu (batch size) kaldır
+    image = batch[0]  # Batch'teki ilk (ve tek) görüntüyü al
+    
+    # Görüntüyü görselleştir
+    plt.imshow(image)
+    plt.axis('off')  # Eksenleri kapat
+    plt.show()
+
 # Örnek olarak eğitim verisine augmentasyon yapalım
 # Varsayılan olarak `x_train` görüntü veri kümesi
-datagen.fit(normalized_images)  # Eğitim verisi üzerinde augmentasyon uygula
+# Eğitim verisi üzerinde augmentasyon uygula
 
 # Veri artırma işlemi yapılmış bir batch alalım
 #for batch in datagen.flow(normalized_images, batch_size=32):
