@@ -17,14 +17,12 @@ from sklearn.metrics import confusion_matrix,classification_report
 from keras.utils import to_categorical
 
 
-img_path='archive/Train/'
+img_path='archive/'
 
 df_train = pd.read_csv('archive/Train.csv')
-
 df_test = pd.read_csv('archive/Test.csv')
 
-df_meta  = pd.read_csv('archive/Meta.csv')
-
+#df_meta  = pd.read_csv('archive/Meta.csv')
 print(df_train.head(10))
 
 
@@ -95,8 +93,35 @@ def resize_images_from_df(df, img_path, target_width, target_height, maintain_as
     # Tüm görüntüler NumPy dizisine dönüştürülür
     return np.array(resized_images)
 
+resized_images = resize_images_from_df(df_train,img_path,32,32)
 
 def normalize_resized_images(resized_images):
     # Görüntüleri normalize et (0-255 -> 0-1)
     normalized_images = resized_images.astype('float32') / 255.0
     return normalized_images
+
+normalized_images = normalize_resized_images(resized_images)
+
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Veri artırma işlemlerini belirtiyoruz
+datagen = ImageDataGenerator(
+    rotation_range=0,        # 20 dereceye kadar döndürme
+    width_shift_range=0.2,    # %20 oranında yatay kaydırma
+    height_shift_range=0.15,   # %20 oranında dikey kaydırma
+    zoom_range=0.15,          # Yakınlaştırma
+    horizontal_flip=False,     # Yatay çevirme
+    fill_mode='nearest'       # Boş pikselleri doldurmak için en yakın değer
+)
+
+# Örnek olarak eğitim verisine augmentasyon yapalım
+# Varsayılan olarak `x_train` görüntü veri kümesi
+datagen.fit(normalized_images)  # Eğitim verisi üzerinde augmentasyon uygula
+
+# Veri artırma işlemi yapılmış bir batch alalım
+#for batch in datagen.flow(normalized_images, batch_size=32):
+ #   break  # Bir batch veri ile augmentasyon işlemi
+
+# Modelinizi eğitirken ImageDataGenerator'u kullanarak augmentasyon yapabilirsiniz:
+#model.fit(datagen.flow(x_train, y_train, batch_size=32), epochs=10)
