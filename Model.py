@@ -15,16 +15,17 @@ warnings.filterwarnings('ignore')
 
 img_path = 'archive/'
 
-# Veri kümesini yükle
+
 df_train = pd.read_csv('archive/Train.csv')
 df_test = pd.read_csv('archive/Test.csv')
 
 print(df_train.head(10))
 
-# Eğitim ve doğrulama veri oranlarını belirleme
-train_ratio = 0.8
-random_state = 42  # Rastgelelik için sabit bir değer
 
+train_ratio = 0.8
+random_state = 42  
+
+<<<<<<< HEAD
 # Her sınıf için veriyi %80 eğitim ve %20 doğrulama olacak şekilde ayırma
 train_data = pd.DataFrame()
 val_data = pd.DataFrame()
@@ -40,6 +41,29 @@ print("Eğitim verisi boyutu:", train_data.shape)
 print("Doğrulama verisi boyutu:", val_data.shape)
 
 # Görüntü işleme ve boyutlandırma fonksiyonları
+=======
+
+train_data = pd.DataFrame()  
+val_data = pd.DataFrame()  
+
+
+for label, group in df_train.groupby('ClassId'):  
+    train_samples = group.sample(frac=train_ratio, random_state=random_state)  
+    val_samples = group.drop(train_samples.index)  
+    
+    train_data = pd.concat([train_data, train_samples])  
+    val_data = pd.concat([val_data, val_samples])  
+
+
+#print("Eğitim verisi boyutu:", train_data.shape)
+#print("Doğrulama verisi boyutu:", val_data.shape)
+
+
+#print("Eğitim seti sınıf dağılımı:\n", train_data['ClassId'].value_counts())
+#print("Doğrulama seti sınıf dağılımı:\n", val_data['ClassId'].value_counts())
+
+
+>>>>>>> 6a7af3ca2e46c27e9917c9eb052f16e717c7454e
 def resize_images_from_df(df, img_path, target_width, target_height, maintain_aspect_ratio=True):
     resized_images = []
     
@@ -70,18 +94,25 @@ def resize_images_from_df(df, img_path, target_width, target_height, maintain_as
     
     return np.array(resized_images)
 
-# Eğitim ve doğrulama verilerinin boyutlandırılması
+
 train_images = resize_images_from_df(train_data, img_path, 32, 32)
 val_images = resize_images_from_df(val_data, img_path, 32, 32)
 
-# Görüntüleri normalize etme
+
 def normalize_resized_images(images):
     return images.astype('float32') / 255.0
 
 train_images_normalized = normalize_resized_images(train_images)
 val_images_normalized = normalize_resized_images(val_images)
 
+<<<<<<< HEAD
 # Veri artırma işlemi
+=======
+
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+>>>>>>> 6a7af3ca2e46c27e9917c9eb052f16e717c7454e
 datagen = ImageDataGenerator(
     rotation_range=20,
     width_shift_range=0.2,
@@ -91,6 +122,7 @@ datagen = ImageDataGenerator(
     fill_mode='nearest'
 )
 
+<<<<<<< HEAD
 # CNN modelini oluşturma
 model = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
@@ -104,6 +136,10 @@ model = Sequential([
     Dropout(0.5),
     Dense(43, activation='softmax')  # 43 sınıfı için çıkış katmanı
 ])
+=======
+
+augmented_images = datagen.flow(train_images_normalized, batch_size=1)
+>>>>>>> 6a7af3ca2e46c27e9917c9eb052f16e717c7454e
 
 # Alternatif: Transfer öğrenme için VGG16 kullanma
 # model = Sequential([
