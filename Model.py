@@ -1,71 +1,52 @@
 import pandas as pd
-#import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import cv2
+import matplotlib.pyplot as plt
 import warnings
 
 warnings.filterwarnings('ignore')
 
-"""
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Conv2D,Dense,Flatten,Input,MaxPooling2D,Dropout,BatchNormalization,Reshape
-from tensorflow.keras.preprocessing.image import load_img,img_to_array
-from sklearn.metrics import confusion_matrix,classification_report
-from keras.utils import to_categorical
-"""
+img_path = 'archive/'
 
-img_path='archive/'
-
+# Veri kümesini yükle
 df_train = pd.read_csv('archive/Train.csv')
 df_test = pd.read_csv('archive/Test.csv')
 
-#df_meta  = pd.read_csv('archive/Meta.csv')
 print(df_train.head(10))
 
+# Eğitim ve doğrulama veri oranlarını belirleme
+train_ratio = 0.8
+random_state = 42  # Rastgelelik için sabit bir değer
 
+# Her sınıf için veriyi %80 eğitim ve %20 doğrulama olacak şekilde ayırma
+train_data = pd.DataFrame()  # Eğitim verisi için boş bir DataFrame
+val_data = pd.DataFrame()  # Doğrulama verisi için boş bir DataFrame
 
-# labels=['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42']
-
-#img_path='C:/Users/ASUS/Desktop/archive/'
-
-#print(df3.head(10))
-"""
-# Örnek bir veri kümesi yükleme ve toplu normalizasyon
-def load_and_normalize_images(df, img_path):
-    image_list = []
+# Sınıf etiketine göre gruplandırma ve her gruptan %80/%20 bölme
+for label, group in df_train.groupby('ClassId'):  # 'ClassId' sınıf etiketinin olduğu sütun adı
+    train_samples = group.sample(frac=train_ratio, random_state=random_state)  # %80 eğitim
+    val_samples = group.drop(train_samples.index)  # Geriye kalan %20 doğrulama
     
-    for img_name in df['Path']:  # DataFrame'deki 'Path' sütunu
-        # Görüntüyü yükle
-        img = cv2.imread(os.path.join(img_path, img_name))
-        
-        # Görüntüyü ekle (0-255 aralığında ham görüntü)
-        image_list.append(img)
-    
-    # Listeyi NumPy dizisine dönüştür
-    images = np.array(image_list)
-    
-    # Tüm görüntüleri vektörize olarak normalleştir (0-255 -> 0-1)
-    images_normalized = images.astype('float32') / 255.0
-    
-    return images_normalized
-"""
-# Tüm görüntüleri yükle ve normalize et
-#normalized_images = load_and_normalize_images(df_train, img_path)
-#   normalized_images = load_and_normalize_images(df_test, img_path+'Test/')
+    train_data = pd.concat([train_data, train_samples])  # Eğitim verisine ekleme
+    val_data = pd.concat([val_data, val_samples])  # Doğrulama verisine ekleme
 
+# Sonuçların kontrolü
+print("Eğitim verisi boyutu:", train_data.shape)
+print("Doğrulama verisi boyutu:", val_data.shape)
+
+# Her bir sınıftaki dağılımın doğrulanması
+print("Eğitim seti sınıf dağılımı:\n", train_data['ClassId'].value_counts())
+print("Doğrulama seti sınıf dağılımı:\n", val_data['ClassId'].value_counts())
+
+# Görüntü işleme ve boyutlandırma fonksiyonları
 def resize_images_from_df(df, img_path, target_width, target_height, maintain_aspect_ratio=True):
     resized_images = []
     
-    for img_name in df['Path']:  # DataFrame'deki 'Path' sütunu ile dosya yollarını alıyoruz
-        # Görüntü dosyasını yükle
+    for img_name in df['Path']:
         img = cv2.imread(os.path.join(img_path, img_name))
         
-        # Eğer aspect ratio korunacaksa
         if maintain_aspect_ratio:
-            # Oranı koruyarak yeniden boyutlandırma
             (h, w) = img.shape[:2]
             if h > w:
                 new_h = target_height
@@ -76,7 +57,6 @@ def resize_images_from_df(df, img_path, target_width, target_height, maintain_as
             
             img_resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
             
-            # Padding ekleyerek görüntüyü tam boyut yapma (64x64 gibi)
             top_padding = (target_height - img_resized.shape[0]) // 2
             bottom_padding = target_height - img_resized.shape[0] - top_padding
             left_padding = (target_width - img_resized.shape[1]) // 2
@@ -84,57 +64,42 @@ def resize_images_from_df(df, img_path, target_width, target_height, maintain_as
             img_padded = cv2.copyMakeBorder(img_resized, top_padding, bottom_padding, left_padding, right_padding, cv2.BORDER_CONSTANT, value=[0, 0, 0])
         
         else:
-            # Aspect ratio'yu korumadan direkt yeniden boyutlandırma
             img_padded = cv2.resize(img, (target_width, target_height), interpolation=cv2.INTER_LINEAR)
         
-        # Yeniden boyutlandırılmış görüntüyü listeye ekle
         resized_images.append(img_padded)
     
-    # Tüm görüntüler NumPy dizisine dönüştürülür
     return np.array(resized_images)
 
-resized_images = resize_images_from_df(df_train,img_path,32,32)
+# Eğitim ve doğrulama verilerinin boyutlandırılması
+train_images = resize_images_from_df(train_data, img_path, 32, 32)
+val_images = resize_images_from_df(val_data, img_path, 32, 32)
 
-def normalize_resized_images(resized_images):
-    # Görüntüleri normalize et (0-255 -> 0-1)
-    normalized_images = resized_images.astype('float32') / 255.0
-    return normalized_images
+# Görüntüleri normalize etme
+def normalize_resized_images(images):
+    return images.astype('float32') / 255.0
 
-normalized_images = normalize_resized_images(resized_images)
+train_images_normalized = normalize_resized_images(train_images)
+val_images_normalized = normalize_resized_images(val_images)
 
+# Veri artırma işlemi
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-# Veri artırma işlemlerini belirtiyoruz
 datagen = ImageDataGenerator(
-    rotation_range=0,        # 20 dereceye kadar döndürme
-    width_shift_range=0.2,    # %20 oranında yatay kaydırma
-    height_shift_range=0.15,   # %20 oranında dikey kaydırma
-    zoom_range=0.15,          # Yakınlaştırma
-    horizontal_flip=False,     # Yatay çevirme
-    fill_mode='nearest'       # Boş pikselleri doldurmak için en yakın değer
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.15,
+    zoom_range=0.15,
+    horizontal_flip=False,
+    fill_mode='nearest'
 )
 
-augmented_images = datagen.flow(normalized_images, batch_size=1)
+# Augment edilmiş görüntüleri görselleştirme
+augmented_images = datagen.flow(train_images_normalized, batch_size=1)
 
-for i in range(5):  # Örneğin 5 tane augment edilmiş görüntü gösterelim
-    batch = next(augmented_images)  # Bir sonraki batch'i al
-    
-    # Batch'ten görüntüyü al ve ilk boyutu (batch size) kaldır
-    image = batch[0]  # Batch'teki ilk (ve tek) görüntüyü al
-    
-    # Görüntüyü görselleştir
+for i in range(5):
+    batch = next(augmented_images)
+    image = batch[0]
     plt.imshow(image)
-    plt.axis('off')  # Eksenleri kapat
+    plt.axis('off')
     plt.show()
-
-# Örnek olarak eğitim verisine augmentasyon yapalım
-# Varsayılan olarak `x_train` görüntü veri kümesi
-# Eğitim verisi üzerinde augmentasyon uygula
-
-# Veri artırma işlemi yapılmış bir batch alalım
-#for batch in datagen.flow(normalized_images, batch_size=32):
- #   break  # Bir batch veri ile augmentasyon işlemi
-
-# Modelinizi eğitirken ImageDataGenerator'u kullanarak augmentasyon yapabilirsiniz:
-#model.fit(datagen.flow(x_train, y_train, batch_size=32), epochs=10)
