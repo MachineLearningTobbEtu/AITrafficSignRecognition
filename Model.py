@@ -4,6 +4,12 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import warnings
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.applications import VGG16  # VGG16 modelini transfer öğrenme için dahil ediyoruz
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 warnings.filterwarnings('ignore')
 
@@ -20,24 +26,18 @@ train_ratio = 0.8
 random_state = 42  # Rastgelelik için sabit bir değer
 
 # Her sınıf için veriyi %80 eğitim ve %20 doğrulama olacak şekilde ayırma
-train_data = pd.DataFrame()  # Eğitim verisi için boş bir DataFrame
-val_data = pd.DataFrame()  # Doğrulama verisi için boş bir DataFrame
+train_data = pd.DataFrame()
+val_data = pd.DataFrame()
 
-# Sınıf etiketine göre gruplandırma ve her gruptan %80/%20 bölme
-for label, group in df_train.groupby('ClassId'):  # 'ClassId' sınıf etiketinin olduğu sütun adı
-    train_samples = group.sample(frac=train_ratio, random_state=random_state)  # %80 eğitim
-    val_samples = group.drop(train_samples.index)  # Geriye kalan %20 doğrulama
+for label, group in df_train.groupby('ClassId'):
+    train_samples = group.sample(frac=train_ratio, random_state=random_state)
+    val_samples = group.drop(train_samples.index)
     
-    train_data = pd.concat([train_data, train_samples])  # Eğitim verisine ekleme
-    val_data = pd.concat([val_data, val_samples])  # Doğrulama verisine ekleme
+    train_data = pd.concat([train_data, train_samples])
+    val_data = pd.concat([val_data, val_samples])
 
-# Sonuçların kontrolü
 print("Eğitim verisi boyutu:", train_data.shape)
 print("Doğrulama verisi boyutu:", val_data.shape)
-
-# Her bir sınıftaki dağılımın doğrulanması
-print("Eğitim seti sınıf dağılımı:\n", train_data['ClassId'].value_counts())
-print("Doğrulama seti sınıf dağılımı:\n", val_data['ClassId'].value_counts())
 
 # Görüntü işleme ve boyutlandırma fonksiyonları
 def resize_images_from_df(df, img_path, target_width, target_height, maintain_aspect_ratio=True):
@@ -82,9 +82,6 @@ train_images_normalized = normalize_resized_images(train_images)
 val_images_normalized = normalize_resized_images(val_images)
 
 # Veri artırma işlemi
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
 datagen = ImageDataGenerator(
     rotation_range=20,
     width_shift_range=0.2,
@@ -94,12 +91,36 @@ datagen = ImageDataGenerator(
     fill_mode='nearest'
 )
 
-# Augment edilmiş görüntüleri görselleştirme
-augmented_images = datagen.flow(train_images_normalized, batch_size=1)
+# CNN modelini oluşturma
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
+    MaxPooling2D((2, 2)),
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Conv2D(128, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dropout(0.5),
+    Dense(43, activation='softmax')  # 43 sınıfı için çıkış katmanı
+])
 
-for i in range(5):
-    batch = next(augmented_images)
-    image = batch[0]
-    plt.imshow(image)
-    plt.axis('off')
-    plt.show()
+# Alternatif: Transfer öğrenme için VGG16 kullanma
+# model = Sequential([
+#     VGG16(include_top=False, weights='imagenet', input_shape=(32, 32, 3)),
+#     GlobalAveragePooling2D(),
+#     Dense(128, activation='relu'),
+#     Dropout(0.5),
+#     Dense(43, activation='softmax')
+# ])
+
+# Modeli derleme
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Modelin yapısını gözden geçirme
+model.summary()
+
+# Modeli eğitme
+history = model.fit(datagen.flow(train_images_normalized, train_data['ClassId'].values, batch_size=32),
+                    epochs=10,
+                    validation_data=(val_images_normalized, val_data['ClassId'].values))
