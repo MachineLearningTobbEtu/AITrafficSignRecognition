@@ -9,37 +9,37 @@ warnings.filterwarnings('ignore')
 
 img_path = 'archive/'
 
-# Veri kümesini yükle
+
 df_train = pd.read_csv('archive/Train.csv')
 df_test = pd.read_csv('archive/Test.csv')
 
 print(df_train.head(10))
 
-# Eğitim ve doğrulama veri oranlarını belirleme
+
 train_ratio = 0.8
-random_state = 42  # Rastgelelik için sabit bir değer
+random_state = 42  
 
-# Her sınıf için veriyi %80 eğitim ve %20 doğrulama olacak şekilde ayırma
-train_data = pd.DataFrame()  # Eğitim verisi için boş bir DataFrame
-val_data = pd.DataFrame()  # Doğrulama verisi için boş bir DataFrame
 
-# Sınıf etiketine göre gruplandırma ve her gruptan %80/%20 bölme
-for label, group in df_train.groupby('ClassId'):  # 'ClassId' sınıf etiketinin olduğu sütun adı
-    train_samples = group.sample(frac=train_ratio, random_state=random_state)  # %80 eğitim
-    val_samples = group.drop(train_samples.index)  # Geriye kalan %20 doğrulama
+train_data = pd.DataFrame()  
+val_data = pd.DataFrame()  
+
+
+for label, group in df_train.groupby('ClassId'):  
+    train_samples = group.sample(frac=train_ratio, random_state=random_state)  
+    val_samples = group.drop(train_samples.index)  
     
-    train_data = pd.concat([train_data, train_samples])  # Eğitim verisine ekleme
-    val_data = pd.concat([val_data, val_samples])  # Doğrulama verisine ekleme
+    train_data = pd.concat([train_data, train_samples])  
+    val_data = pd.concat([val_data, val_samples])  
 
-# Sonuçların kontrolü
-print("Eğitim verisi boyutu:", train_data.shape)
-print("Doğrulama verisi boyutu:", val_data.shape)
 
-# Her bir sınıftaki dağılımın doğrulanması
-print("Eğitim seti sınıf dağılımı:\n", train_data['ClassId'].value_counts())
-print("Doğrulama seti sınıf dağılımı:\n", val_data['ClassId'].value_counts())
+#print("Eğitim verisi boyutu:", train_data.shape)
+#print("Doğrulama verisi boyutu:", val_data.shape)
 
-# Görüntü işleme ve boyutlandırma fonksiyonları
+
+#print("Eğitim seti sınıf dağılımı:\n", train_data['ClassId'].value_counts())
+#print("Doğrulama seti sınıf dağılımı:\n", val_data['ClassId'].value_counts())
+
+
 def resize_images_from_df(df, img_path, target_width, target_height, maintain_aspect_ratio=True):
     resized_images = []
     
@@ -70,18 +70,18 @@ def resize_images_from_df(df, img_path, target_width, target_height, maintain_as
     
     return np.array(resized_images)
 
-# Eğitim ve doğrulama verilerinin boyutlandırılması
+
 train_images = resize_images_from_df(train_data, img_path, 32, 32)
 val_images = resize_images_from_df(val_data, img_path, 32, 32)
 
-# Görüntüleri normalize etme
+
 def normalize_resized_images(images):
     return images.astype('float32') / 255.0
 
 train_images_normalized = normalize_resized_images(train_images)
 val_images_normalized = normalize_resized_images(val_images)
 
-# Veri artırma işlemi
+
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
@@ -94,7 +94,7 @@ datagen = ImageDataGenerator(
     fill_mode='nearest'
 )
 
-# Augment edilmiş görüntüleri görselleştirme
+
 augmented_images = datagen.flow(train_images_normalized, batch_size=1)
 
 for i in range(5):
