@@ -122,5 +122,27 @@ model.summary()
 
 # Modeli eğitme
 history = model.fit(datagen.flow(train_images_normalized, train_data['ClassId'].values, batch_size=32),
-                    epochs=10,
+                    epochs=5,
                     validation_data=(val_images_normalized, val_data['ClassId'].values))
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+
+# Make predictions on the validation set
+val_predictions = np.argmax(model.predict(val_images_normalized), axis=1)
+val_true_labels = val_data['ClassId'].values
+
+# Calculate the metrics
+accuracy = accuracy_score(val_true_labels, val_predictions)
+precision = precision_score(val_true_labels, val_predictions, average='weighted')
+recall = recall_score(val_true_labels, val_predictions, average='weighted')
+f1 = f1_score(val_true_labels, val_predictions, average='weighted')
+
+# Print the classification report for detailed metrics per class
+print("Classification Report:")
+print(classification_report(val_true_labels, val_predictions, target_names=[str(i) for i in range(43)]))
+
+# Print the overall metrics
+print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-score: {f1:.4f}")
