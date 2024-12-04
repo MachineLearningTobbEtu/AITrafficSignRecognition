@@ -21,9 +21,13 @@ img_path = "archive/"
 df_train = pd.read_csv("archive/Train.csv")
 df_test = pd.read_csv("archive/Test.csv")
 
+# Boyutları yazdırma
+print("df_train boyutu:", df_train.shape)
+print("df_test boyutu:", df_test.shape)
+
 print(df_train.head(10))
 
-train_ratio = 0.8
+train_ratio = 0.75
 random_state = 42
 
 #Comparison Parameters
@@ -32,7 +36,7 @@ plotDenseUnitComparison=False
 plotConvFiltersComparison=False
 plotAugmentationComparison=False
 plotNormalizationComparison=False
-plotEpochComparison=False
+plotEpochComparison=True
 plotBatchSizeComparison=False
 
 # ---------------------------Veri Okuma Bitti---------------------------
@@ -704,38 +708,60 @@ if(plotNormalizationComparison):
 # ---------------------------Epoch degisimi gozlem---------------------------
 
 if(plotEpochComparison):
-    # Epoch sayısını 50'ye çıkararak modeli eğitme
+    # Train the model by increasing the number of epochs to 50
+    # CNN modelini oluşturma
+    model = Sequential(
+        [
+            Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+            MaxPooling2D((2, 2)),
+            Conv2D(64, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Conv2D(128, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Flatten(),
+            Dense(128, activation="relu"),
+            Dropout(0.5),
+            Dense(43, activation="softmax"),
+        ]
+    )
+
+    # Modeli derleme
+    model.compile(
+        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
+
+    # Modelin yapısını gözden geçirme
+    model.summary()
+
     history = model.fit(
         datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
         epochs=50,
         validation_data=(val_images_normalized, val_data["ClassId"].values),
     )
 
-    # Eğitim ve doğrulama başarımlarını grafik üzerinde gösterme
+    # Plot training and validation performance
     plt.figure(figsize=(12, 6))
 
-    # Eğitim ve doğrulama doğruluğu (accuracy) grafiği
+    # Plot training and validation accuracy
     plt.subplot(1, 2, 1)
-    plt.plot(history.history["accuracy"], label="Eğitim Doğruluğu")
-    plt.plot(history.history["val_accuracy"], label="Doğrulama Doğruluğu")
-    plt.title("Model Doğruluğu")
+    plt.plot(history.history["accuracy"], label="Training Accuracy")
+    plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+    plt.title("Model Accuracy")
     plt.xlabel("Epoch")
-    plt.ylabel("Doğruluk")
+    plt.ylabel("Accuracy")
     plt.legend()
 
-    # Eğitim ve doğrulama kaybı (loss) grafiği
+    # Plot training and validation loss
     plt.subplot(1, 2, 2)
-    plt.plot(history.history["loss"], label="Eğitim Kaybı")
-    plt.plot(history.history["val_loss"], label="Doğrulama Kaybı")
-    plt.title("Model Kaybı")
+    plt.plot(history.history["loss"], label="Training Loss")
+    plt.plot(history.history["val_loss"], label="Validation Loss")
+    plt.title("Model Loss")
     plt.xlabel("Epoch")
-    plt.ylabel("Kayıp")
+    plt.ylabel("Loss")
     plt.legend()
 
     plt.tight_layout()
     plt.show()
-
-    print("Test sonuçları başarıyla tahmin edildi.")
 
 
 # ---------------------------Epoch degisimi gozlem bitti---------------------------
