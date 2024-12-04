@@ -27,8 +27,8 @@ train_ratio = 0.8
 random_state = 42
 
 #Comparison Parameters
-plotNoComprision=True
-plotDenseUnitComparison=False
+plotNoComprision=False
+plotDenseUnitComparison=True
 plotConvFiltersComparison=False
 plotAugmentationComparison=False
 plotNormalizationComparison=False
@@ -218,6 +218,7 @@ if plotDenseUnitComparison:
         "precision": [],
         "recall": [],
         "f1_score": [],
+        "val_accuracy": []
     }
 
     for unit in units:
@@ -272,7 +273,8 @@ if plotDenseUnitComparison:
 
         # Test seti üzerinde tahmin yapma
         test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
-
+        final_val_accuracy = history.history['val_accuracy'][-1]
+        
         print("Classification Report:")
         print(
             classification_report(
@@ -297,8 +299,9 @@ if plotDenseUnitComparison:
         results["precision"].append(precision_test)
         results["recall"].append(recall_test)
         results["f1_score"].append(f1_test)
+        results["val_accuracy"].append(final_val_accuracy)
         
-        print(f"Units: {unit}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}")
+        print(f"Units: {unit}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}, Val_Accuracy: {final_val_accuracy:.4f}")
 
 
     # ---------------------------Model Basarimi Bitti---------------------------
@@ -309,25 +312,26 @@ if plotDenseUnitComparison:
     plt.plot(results["units"], results["precision"], marker="s", label="Precision")
     plt.plot(results["units"], results["recall"], marker="^", label="Recall")
     plt.plot(results["units"], results["f1_score"], marker="d", label="F1-Score")
-
-    plt.title("Performance Metrics vs Conv2D Filters")
-    plt.xlabel("Conv2D Filters")
-    plt.ylabel("Metrics")
+    plt.title("Performance Metrics vs Dense Units")
+    plt.xlabel("Dense Units")
+    plt.ylabel("Performance Metrics")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("Performance_Metrics_vs_Dense_Units.png", dpi=300, bbox_inches='tight')
     plt.show()
 
-    """plt.figure(figsize=(10, 6))
-    plt.plot(results["filters"], results["precision"], marker="s", color="orange", label="Precision")
-
-    plt.title("Precision vs Conv2D Filters")
-    plt.xlabel("Conv2D Filters")
-    plt.ylabel("Precision")
+    plt.figure(figsize=(10, 6))
+    plt.plot(results["units"], results["accuracy"], marker="s", color="orange", label="Training Accuracy")
+    plt.plot(results["units"], results["val_accuracy"], marker="*", label="Validation Accuracy") 
+    plt.title("Performance Metrics vs Dense Units")
+    plt.xlabel("Dense Units")
+    plt.ylabel("Performance Metrics")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.show()"""
+    plt.savefig("Training_Accuracy_Validation_Accuracy_vs_Dense_Units.png", dpi=300, bbox_inches='tight')
+    plt.show()
 
     # ---------------------------Grafiklestirme Bitti---------------------------
 
@@ -342,6 +346,7 @@ if plotConvFiltersComparison:
         "precision": [],
         "recall": [],
         "f1_score": [],
+        "val_accuracy": []
     }
 
     for filters in filter_values:
@@ -395,6 +400,7 @@ if plotConvFiltersComparison:
 
         # Test seti üzerinde tahmin yapma
         test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
+        final_val_accuracy = history.history['val_accuracy'][-1]
 
         print("Classification Report:")
         print(
@@ -408,7 +414,7 @@ if plotConvFiltersComparison:
         precision_test = precision_score(test_true_labels, test_predictions, average="weighted")
         recall_test = recall_score(test_true_labels, test_predictions, average="weighted")
         f1_test = f1_score(test_true_labels, test_predictions, average="weighted")
-
+    
         # Test sonuçlarını yazdırma
         """print("Test Sonuçları:")
         print(f"Accuracy: {accuracy_test:.4f}")
@@ -420,8 +426,9 @@ if plotConvFiltersComparison:
         results["precision"].append(precision_test)
         results["recall"].append(recall_test)
         results["f1_score"].append(f1_test)
+        results["val_accuracy"].append(final_val_accuracy)
         
-        print(f"Filters: {filters}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}")
+        print(f"Filters: {filters}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}, Val_Accuracy: {final_val_accuracy:.4f}")
 
 
     # ---------------------------Model Basarimi Bitti---------------------------
@@ -435,22 +442,24 @@ if plotConvFiltersComparison:
 
     plt.title("Performance Metrics vs Conv2D Filters")
     plt.xlabel("Conv2D Filters")
-    plt.ylabel("Metrics")
+    plt.ylabel("Performance Metrics")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
+    plt.savefig("Performance_Metrics_vs_Conv2D_Filters.png", dpi=300, bbox_inches='tight')
     plt.show()
 
-    """plt.figure(figsize=(10, 6))
-    plt.plot(results["filters"], results["precision"], marker="s", color="orange", label="Precision")
-
-    plt.title("Precision vs Conv2D Filters")
+    plt.figure(figsize=(10, 6))
+    plt.plot(results["filters"], results["accuracy"], marker="s", color="orange", label="Training Accuracy")
+    plt.plot(results["filters"], results["val_accuracy"], marker="*", label="Validation Accuracy") 
+    plt.title("Performance Metrics vs Conv2D Filters")
     plt.xlabel("Conv2D Filters")
-    plt.ylabel("Precision")
+    plt.ylabel("Performance Metrics")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
-    plt.show()"""
+    plt.savefig("Val_acc_training_acc_vs_Conv2D_Filters.png", dpi=300, bbox_inches='tight')
+    plt.show()
 
     # ---------------------------Grafiklestirme Bitti---------------------------
 
