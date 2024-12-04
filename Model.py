@@ -27,6 +27,9 @@ train_ratio = 0.8
 random_state = 42
 
 #Comparison Parameters
+plotNoComprision=True
+plotDenseUnitComparison=False
+plotConvFiltersComparison=False
 plotAugmentationComparison=False
 plotNormalizationComparison=False
 plotEpochComparison=False
@@ -125,82 +128,332 @@ datagen = ImageDataGenerator(
 )
 # ---------------------------Veri genelleme Bitti (Augmentation)---------------------------
 # ---------------------------------------------------------------------------------------------------------
-# ---------------------------Model ve Eğitim---------------------------
 
-# CNN modelini oluşturma
-model = Sequential(
-    [
-        Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
-        MaxPooling2D((2, 2)),
-        Conv2D(64, (3, 3), activation="relu"),
-        MaxPooling2D((2, 2)),
-        Conv2D(128, (3, 3), activation="relu"),
-        MaxPooling2D((2, 2)),
-        Flatten(),
-        Dense(128, activation="relu"),
-        Dropout(0.5),
-        Dense(43, activation="softmax"),
-    ]
-)
+if plotNoComprision:
+    # ---------------------------Model ve Eğitim---------------------------
 
-
-# Modeli derleme
-model.compile(
-    optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
-)
-
-# Modelin yapısını gözden geçirme
-model.summary()
-
-# Modeli eğitme
-history = model.fit(
-    datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
-    epochs=10,
-    validation_data=(val_images_normalized, val_data["ClassId"].values),
-)
-
-# ---------------------------Model ve Eğitim Bitti---------------------------
-# ---------------------------------------------------------------------------------------------------------
-# ---------------------------Model Basarimi---------------------------
-
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    classification_report
-)
-
-test_images = resize_images_from_df(df_test, img_path, 32, 32)
-test_images_normalized = normalize_resized_images(test_images)
-test_true_labels = df_test["ClassId"].values
-
-
-# Test seti üzerinde tahmin yapma
-test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
-
-print("Classification Report:")
-print(
-    classification_report(
-        test_true_labels, test_predictions, target_names=[str(i) for i in range(43)]
+    # CNN modelini oluşturma
+    model = Sequential(
+        [
+            Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+            MaxPooling2D((2, 2)),
+            Conv2D(64, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Conv2D(128, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Flatten(),
+            Dense(128, activation="relu"),
+            Dropout(0.5),
+            Dense(43, activation="softmax"),
+        ]
     )
-)
-
-# Test başarımını hesaplama
-accuracy_test = accuracy_score(test_true_labels, test_predictions)
-precision_test = precision_score(test_true_labels, test_predictions, average="weighted")
-recall_test = recall_score(test_true_labels, test_predictions, average="weighted")
-f1_test = f1_score(test_true_labels, test_predictions, average="weighted")
-
-# Test sonuçlarını yazdırma
-print("Test Sonuçları:")
-print(f"Accuracy: {accuracy_test:.4f}")
-print(f"Precision: {precision_test:.4f}")
-print(f"Recall: {recall_test:.4f}")
-print(f"F1-score: {f1_test:.4f}")
 
 
-# ---------------------------Model Basarimi Bitti---------------------------
+    # Modeli derleme
+    model.compile(
+        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
+
+    # Modelin yapısını gözden geçirme
+    model.summary()
+
+    # Modeli eğitme
+    history = model.fit(
+        datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
+        epochs=10,
+        validation_data=(val_images_normalized, val_data["ClassId"].values),
+    )
+
+    # ---------------------------Model ve Eğitim Bitti---------------------------
+    # ---------------------------------------------------------------------------------------------------------
+    # ---------------------------Model Basarimi---------------------------
+
+    from sklearn.metrics import (
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+        classification_report
+    )
+
+    test_images = resize_images_from_df(df_test, img_path, 32, 32)
+    test_images_normalized = normalize_resized_images(test_images)
+    test_true_labels = df_test["ClassId"].values
+
+
+    # Test seti üzerinde tahmin yapma
+    test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
+
+    print("Classification Report:")
+    print(
+        classification_report(
+            test_true_labels, test_predictions, target_names=[str(i) for i in range(43)]
+        )
+    )
+
+    # Test başarımını hesaplama
+    accuracy_test = accuracy_score(test_true_labels, test_predictions)
+    precision_test = precision_score(test_true_labels, test_predictions, average="weighted")
+    recall_test = recall_score(test_true_labels, test_predictions, average="weighted")
+    f1_test = f1_score(test_true_labels, test_predictions, average="weighted")
+
+    # Test sonuçlarını yazdırma
+    print("Test Sonuçları:")
+    print(f"Accuracy: {accuracy_test:.4f}")
+    print(f"Precision: {precision_test:.4f}")
+    print(f"Recall: {recall_test:.4f}")
+    print(f"F1-score: {f1_test:.4f}")
+
+
+    # ---------------------------Model Basarimi Bitti---------------------------
+
+if plotDenseUnitComparison:
+# ---------------------------Model ve Eğitim---------------------------
+    # CNN modelini oluşturma
+
+    units = [32, 64, 128, 256]
+    results = {
+        "units": [],
+        "accuracy": [],
+        "precision": [],
+        "recall": [],
+        "f1_score": [],
+    }
+
+    for unit in units:
+        print(unit)
+        model = Sequential(
+            [
+                Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+                MaxPooling2D((2, 2)),
+                Conv2D(64, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Conv2D(128, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Flatten(),
+                Dense(unit, activation="relu"),
+                Dropout(0.5),
+                Dense(43, activation="softmax"),
+            ]
+        )
+
+
+        # Modeli derleme
+        model.compile(
+            optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+        )
+
+        # Modelin yapısını gözden geçirme
+        model.summary()
+
+        # Modeli eğitme
+        history = model.fit(
+            datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
+            epochs=5,
+            validation_data=(val_images_normalized, val_data["ClassId"].values),
+        )
+
+        # ---------------------------Model ve Eğitim Bitti---------------------------
+        # ---------------------------------------------------------------------------------------------------------
+        # ---------------------------Model Basarimi---------------------------
+
+        from sklearn.metrics import (
+            accuracy_score,
+            precision_score,
+            recall_score,
+            f1_score,
+            classification_report
+        )
+
+        test_images = resize_images_from_df(df_test, img_path, 32, 32)
+        test_images_normalized = normalize_resized_images(test_images)
+        test_true_labels = df_test["ClassId"].values
+
+
+        # Test seti üzerinde tahmin yapma
+        test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
+
+        print("Classification Report:")
+        print(
+            classification_report(
+                test_true_labels, test_predictions, target_names=[str(i) for i in range(43)]
+            )
+        )
+
+        # Test başarımını hesaplama
+        accuracy_test = accuracy_score(test_true_labels, test_predictions)
+        precision_test = precision_score(test_true_labels, test_predictions, average="weighted")
+        recall_test = recall_score(test_true_labels, test_predictions, average="weighted")
+        f1_test = f1_score(test_true_labels, test_predictions, average="weighted")
+
+        # Test sonuçlarını yazdırma
+        """print("Test Sonuçları:")
+        print(f"Accuracy: {accuracy_test:.4f}")
+        print(f"Precision: {precision_test:.4f}")
+        print(f"Recall: {recall_test:.4f}")
+        print(f"F1-score: {f1_test:.4f}")"""
+        results["units"].append(unit)
+        results["accuracy"].append(accuracy_test)
+        results["precision"].append(precision_test)
+        results["recall"].append(recall_test)
+        results["f1_score"].append(f1_test)
+        
+        print(f"Units: {unit}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}")
+
+
+    # ---------------------------Model Basarimi Bitti---------------------------
+
+    # ---------------------------Grafiklestirme---------------------------
+    plt.figure(figsize=(12, 8))
+    plt.plot(results["units"], results["accuracy"], marker="o", label="Accuracy")
+    plt.plot(results["units"], results["precision"], marker="s", label="Precision")
+    plt.plot(results["units"], results["recall"], marker="^", label="Recall")
+    plt.plot(results["units"], results["f1_score"], marker="d", label="F1-Score")
+
+    plt.title("Performance Metrics vs Conv2D Filters")
+    plt.xlabel("Conv2D Filters")
+    plt.ylabel("Metrics")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    """plt.figure(figsize=(10, 6))
+    plt.plot(results["filters"], results["precision"], marker="s", color="orange", label="Precision")
+
+    plt.title("Precision vs Conv2D Filters")
+    plt.xlabel("Conv2D Filters")
+    plt.ylabel("Precision")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()"""
+
+    # ---------------------------Grafiklestirme Bitti---------------------------
+
+if plotConvFiltersComparison:
+# ---------------------------Model ve Eğitim---------------------------
+    # CNN modelini oluşturma
+
+    filter_values = [16, 32, 64, 128]
+    results = {
+        "filters": [],
+        "accuracy": [],
+        "precision": [],
+        "recall": [],
+        "f1_score": [],
+    }
+
+    for filters in filter_values:
+        model = Sequential(
+            [
+                Conv2D(filters, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+                MaxPooling2D((2, 2)),
+                Conv2D(2*filters, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Conv2D(4*filters, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Flatten(),
+                Dense(128, activation="relu"),
+                Dropout(0.5),
+                Dense(43, activation="softmax"),
+            ]
+        )
+
+
+        # Modeli derleme
+        model.compile(
+            optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+        )
+
+        # Modelin yapısını gözden geçirme
+        model.summary()
+
+        # Modeli eğitme
+        history = model.fit(
+            datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
+            epochs=5,
+            validation_data=(val_images_normalized, val_data["ClassId"].values),
+        )
+
+        # ---------------------------Model ve Eğitim Bitti---------------------------
+        # ---------------------------------------------------------------------------------------------------------
+        # ---------------------------Model Basarimi---------------------------
+
+        from sklearn.metrics import (
+            accuracy_score,
+            precision_score,
+            recall_score,
+            f1_score,
+            classification_report
+        )
+
+        test_images = resize_images_from_df(df_test, img_path, 32, 32)
+        test_images_normalized = normalize_resized_images(test_images)
+        test_true_labels = df_test["ClassId"].values
+
+
+        # Test seti üzerinde tahmin yapma
+        test_predictions = np.argmax(model.predict(test_images_normalized), axis=1)
+
+        print("Classification Report:")
+        print(
+            classification_report(
+                test_true_labels, test_predictions, target_names=[str(i) for i in range(43)]
+            )
+        )
+
+        # Test başarımını hesaplama
+        accuracy_test = accuracy_score(test_true_labels, test_predictions)
+        precision_test = precision_score(test_true_labels, test_predictions, average="weighted")
+        recall_test = recall_score(test_true_labels, test_predictions, average="weighted")
+        f1_test = f1_score(test_true_labels, test_predictions, average="weighted")
+
+        # Test sonuçlarını yazdırma
+        """print("Test Sonuçları:")
+        print(f"Accuracy: {accuracy_test:.4f}")
+        print(f"Precision: {precision_test:.4f}")
+        print(f"Recall: {recall_test:.4f}")
+        print(f"F1-score: {f1_test:.4f}")"""
+        results["filters"].append(filters)
+        results["accuracy"].append(accuracy_test)
+        results["precision"].append(precision_test)
+        results["recall"].append(recall_test)
+        results["f1_score"].append(f1_test)
+        
+        print(f"Filters: {filters}, Accuracy: {accuracy_test:.4f}, Precision: {precision_test:.4f}, Recall: {recall_test:.4f}, F1: {f1_test:.4f}")
+
+
+    # ---------------------------Model Basarimi Bitti---------------------------
+
+    # ---------------------------Grafiklestirme---------------------------
+    plt.figure(figsize=(12, 8))
+    plt.plot(results["filters"], results["accuracy"], marker="o", label="Accuracy")
+    plt.plot(results["filters"], results["precision"], marker="s", label="Precision")
+    plt.plot(results["filters"], results["recall"], marker="^", label="Recall")
+    plt.plot(results["filters"], results["f1_score"], marker="d", label="F1-Score")
+
+    plt.title("Performance Metrics vs Conv2D Filters")
+    plt.xlabel("Conv2D Filters")
+    plt.ylabel("Metrics")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    """plt.figure(figsize=(10, 6))
+    plt.plot(results["filters"], results["precision"], marker="s", color="orange", label="Precision")
+
+    plt.title("Precision vs Conv2D Filters")
+    plt.xlabel("Conv2D Filters")
+    plt.ylabel("Precision")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()"""
+
+    # ---------------------------Grafiklestirme Bitti---------------------------
+
 # ---------------------------Augmentation'siz Model ve Eğitim---------------------------
 # Modeli yeniden oluşturma
 if(plotAugmentationComparison):
