@@ -21,18 +21,23 @@ img_path = "archive/"
 df_train = pd.read_csv("archive/Train.csv")
 df_test = pd.read_csv("archive/Test.csv")
 
+# Boyutları yazdırma
+print("df_train boyutu:", df_train.shape)
+print("df_test boyutu:", df_test.shape)
+
 print(df_train.head(10))
 
-train_ratio = 0.8
+train_ratio = 0.75
 random_state = 42
 
 #Comparison Parameters
 plotNoComprision=False
-plotDenseUnitComparison=True
+plotDenseUnitComparison=False
 plotConvFiltersComparison=False
 plotAugmentationComparison=False
 plotNormalizationComparison=False
-plotEpochComparison=False
+plotEpochComparison=True
+plotBatchSizeComparison=False
 
 # ---------------------------Veri Okuma Bitti---------------------------
 # ---------------------------------------------------------------------------------------------------------
@@ -160,7 +165,7 @@ if plotNoComprision:
     # Modeli eğitme
     history = model.fit(
         datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
-        epochs=10,
+        epochs=5,
         validation_data=(val_images_normalized, val_data["ClassId"].values),
     )
 
@@ -495,7 +500,7 @@ if(plotAugmentationComparison):
     history_no_aug = model_no_aug.fit(
         train_images_normalized,
         train_data["ClassId"].values,
-        epochs=10,
+        epochs=5,
         batch_size=32,
         validation_data=(val_images_normalized, val_data["ClassId"].values),
     )
@@ -625,10 +630,10 @@ if(plotNormalizationComparison):
     # Modelin yapısını kontrol etme
     model_no_normalize.summary()
     # Modeli eğitme
-    history_no_aug = model_no_normalize.fit(
+    history_no_normalize = model_no_normalize.fit(
         train_images,
         train_data["ClassId"].values,
-        epochs=10,
+        epochs=5,
         batch_size=32,
         validation_data=(val_images, val_data["ClassId"].values),
     )
@@ -649,7 +654,7 @@ if(plotNormalizationComparison):
     f1_test_no_normalize = f1_score(test_true_labels, test_predictions_no_normalize, average="weighted")
 
     # Augmentation olmadan başarımlar
-    print("Augmentation'siz Model Sonuçları:")
+    print("Normalization'siz Model Sonuçları:")
     print(f"Accuracy: {accuracy_test_no_normalize:.4f}")
     print(f"Precision: {precision_test_no_normalize:.4f}")
     print(f"Recall: {recall_test_no_normalize:.4f}")
@@ -703,40 +708,117 @@ if(plotNormalizationComparison):
 # ---------------------------Epoch degisimi gozlem---------------------------
 
 if(plotEpochComparison):
-    # Epoch sayısını 50'ye çıkararak modeli eğitme
+    # Train the model by increasing the number of epochs to 50
+    # CNN modelini oluşturma
+    model = Sequential(
+        [
+            Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+            MaxPooling2D((2, 2)),
+            Conv2D(64, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Conv2D(128, (3, 3), activation="relu"),
+            MaxPooling2D((2, 2)),
+            Flatten(),
+            Dense(128, activation="relu"),
+            Dropout(0.5),
+            Dense(43, activation="softmax"),
+        ]
+    )
+
+    # Modeli derleme
+    model.compile(
+        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
+
+    # Modelin yapısını gözden geçirme
+    model.summary()
+
     history = model.fit(
         datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=32),
         epochs=50,
         validation_data=(val_images_normalized, val_data["ClassId"].values),
     )
 
-    # Eğitim ve doğrulama başarımlarını grafik üzerinde gösterme
+    # Plot training and validation performance
     plt.figure(figsize=(12, 6))
 
-    # Eğitim ve doğrulama doğruluğu (accuracy) grafiği
+    # Plot training and validation accuracy
     plt.subplot(1, 2, 1)
-    plt.plot(history.history["accuracy"], label="Eğitim Doğruluğu")
-    plt.plot(history.history["val_accuracy"], label="Doğrulama Doğruluğu")
-    plt.title("Model Doğruluğu")
+    plt.plot(history.history["accuracy"], label="Training Accuracy")
+    plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
+    plt.title("Model Accuracy")
     plt.xlabel("Epoch")
-    plt.ylabel("Doğruluk")
+    plt.ylabel("Accuracy")
     plt.legend()
 
-    # Eğitim ve doğrulama kaybı (loss) grafiği
+    # Plot training and validation loss
     plt.subplot(1, 2, 2)
-    plt.plot(history.history["loss"], label="Eğitim Kaybı")
-    plt.plot(history.history["val_loss"], label="Doğrulama Kaybı")
-    plt.title("Model Kaybı")
+    plt.plot(history.history["loss"], label="Training Loss")
+    plt.plot(history.history["val_loss"], label="Validation Loss")
+    plt.title("Model Loss")
     plt.xlabel("Epoch")
-    plt.ylabel("Kayıp")
+    plt.ylabel("Loss")
     plt.legend()
 
     plt.tight_layout()
     plt.show()
 
-    print("Test sonuçları başarıyla tahmin edildi.")
-
 
 # ---------------------------Epoch degisimi gozlem bitti---------------------------
 # ---------------------------------------------------------------------------------------------------------
-# Print the classification report for detailed metrics per class
+if(plotBatchSizeComparison):
+    # Batch size değerlerini belirleme
+    batch_sizes = [8, 16, 32, 64, 128]
+
+    # Sonuçları saklayacak listeler
+    acc_values = []
+    val_acc_values = []
+
+    # Her batch_size için modeli eğitme ve sonuçları saklama
+    for batch_size in batch_sizes:
+        print(f"Training with batch size: {batch_size}")
+        
+        # Modeli yeniden oluşturma
+        model = Sequential(
+            [
+                Conv2D(32, (3, 3), activation="relu", input_shape=(32, 32, 3)),
+                MaxPooling2D((2, 2)),
+                Conv2D(64, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Conv2D(128, (3, 3), activation="relu"),
+                MaxPooling2D((2, 2)),
+                Flatten(),
+                Dense(128, activation="relu"),
+                Dropout(0.5),
+                Dense(43, activation="softmax"),
+            ]
+        )
+        
+        # Modeli derleme
+        model.compile(
+            optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+        )
+        
+        # Modeli eğitme
+        history = model.fit(
+            datagen.flow(train_images_normalized, train_data["ClassId"].values, batch_size=batch_size),
+            epochs=5,
+            validation_data=(val_images_normalized, val_data["ClassId"].values),
+        )
+        
+        # Doğruluk ve validation doğruluğu değerlerini kaydetme
+        acc_values.append(history.history['accuracy'][-1])
+        val_acc_values.append(history.history['val_accuracy'][-1])
+
+    # Sonuçları grafikte gösterme
+    plt.figure(figsize=(10, 6))
+    plt.plot(batch_sizes, acc_values, label="Training Accuracy", marker='o')
+    plt.plot(batch_sizes, val_acc_values, label="Validation Accuracy", marker='o')
+    plt.title("Batch Size vs Accuracy")
+    plt.xlabel("Batch Size")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+#---------------------------------------------
